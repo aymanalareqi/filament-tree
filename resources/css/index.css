@@ -2,3 +2,66 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @source "../views/**/*.blade.php";
+
+@layer components {
+    .fi-tree-indent {
+        align-self: stretch;
+        display: flex;
+        flex: none;
+    }
+
+    .fi-tree-indent-guide {
+        inline-size: 1.25rem;
+        min-block-size: 2rem;
+        position: relative;
+    }
+
+    .fi-tree-indent-guide::before {
+        background: var(--gray-200);
+        content: "";
+        inline-size: 1px;
+        inset-block: -0.75rem;
+        inset-inline-start: 50%;
+        position: absolute;
+    }
+
+    .fi-tree-indent-guide:not(.fi-tree-indent-guide-continues):not(.fi-tree-indent-guide-current)::before {
+        display: none;
+    }
+
+    .fi-tree-indent-guide-current::before {
+        inset-block-end: 50%;
+    }
+
+    .fi-tree-indent-guide-current.fi-tree-indent-guide-continues::before {
+        inset-block-end: -0.75rem;
+    }
+
+    .fi-tree-indent-guide-current::after {
+        background: var(--gray-200);
+        block-size: 1px;
+        content: "";
+        inline-size: 50%;
+        inset-block-start: 50%;
+        inset-inline-start: 50%;
+        position: absolute;
+    }
+
+    .dark .fi-tree-indent-guide::before,
+    .dark .fi-tree-indent-guide::after {
+        background: color-mix(in srgb, white 14%, transparent);
+    }
+
+    .fi-tree-toggle {
+        border-radius: 0.375rem;
+    }
+
+    .fi-tree-toggle:hover {
+        background: rgb(107 114 128 / 8%);
+    }
+
+    .fi-tree-toggle:focus-visible {
+        outline: 2px solid var(--primary-600);
+        outline-offset: 2px;
+    }
+}

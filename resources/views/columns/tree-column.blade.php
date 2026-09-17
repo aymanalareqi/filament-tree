@@ -1,6 +1,6 @@
 <div
     class="fi-tree-node flex min-w-0 items-center gap-2.5"
-    style="gap: 0.625rem; padding-inline-start: {{ $depth * 1.25 }}rem"
+    style="gap: 0.625rem"
     data-tree-record-key="{{ $recordKey }}"
     data-tree-depth="{{ $depth }}"
     @if ($isReordering)
@@ -140,6 +140,20 @@
         "
     @endif
 >
+    @if ($depth > 0)
+        <div class="fi-tree-indent" aria-hidden="true">
+            @foreach ($lineContinuations as $continues)
+                <span
+                    @class([
+                        'fi-tree-indent-guide',
+                        'fi-tree-indent-guide-current' => $loop->last,
+                        'fi-tree-indent-guide-continues' => $continues,
+                    ])
+                ></span>
+            @endforeach
+        </div>
+    @endif
+
     <div class="flex shrink-0 items-center gap-1.5" style="gap: 0.375rem">
         @if ($isReordering)
             <button
@@ -156,8 +170,8 @@
         @if ($hasChildren)
             <button
                 type="button"
-                class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-500 shadow-xs transition hover:text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-400"
-                style="box-sizing: border-box; height: 2rem; width: 2rem; margin: 0; padding: 0; border: 1px solid var(--gray-300); border-radius: 0.5rem"
+                class="fi-tree-toggle inline-flex size-8 shrink-0 items-center justify-center text-gray-500 transition hover:text-gray-700 dark:text-gray-400"
+                style="box-sizing: border-box; height: 2rem; width: 2rem; margin: 0; padding: 0; border: 0; background: transparent"
                 aria-label="{{ __($isExpanded ? $collapseLabel : $expandLabel) }}"
                 aria-expanded="{{ $isExpanded ? 'true' : 'false' }}"
                 x-data="{ loading: false }"

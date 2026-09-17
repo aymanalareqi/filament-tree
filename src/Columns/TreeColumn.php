@@ -25,6 +25,7 @@ final class TreeColumn extends TextColumn
         return view('filament-tree::columns.tree-column', [
             'content' => parent::toEmbeddedHtml(),
             'depth' => $livewire->getTreeRecordDepth($this->getRecord()),
+            'lineContinuations' => $livewire->getTreeRecordLineContinuations($this->getRecord()),
             'hasChildren' => $livewire->treeRecordHasChildren($this->getRecord()),
             'isExpanded' => $livewire->isTreeRecordExpanded($this->getRecord()),
             'recordKey' => $livewire->getTableRecordKey($this->getRecord()),

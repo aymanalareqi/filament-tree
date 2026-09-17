@@ -25,6 +25,9 @@ trait InteractsWithTreeTable
     /** @var array<int|string, int> */
     protected array $treeRecordDepths = [];
 
+    /** @var array<int|string, array<int, bool>> */
+    protected array $treeRecordLineContinuations = [];
+
     /** @var array<int|string, true> */
     protected array $treeRecordsWithChildren = [];
 
@@ -143,6 +146,8 @@ trait InteractsWithTreeTable
                 ->values());
 
         $this->treeRecordsWithChildren = [];
+        $this->treeRecordDepths = [];
+        $this->treeRecordLineContinuations = [];
 
         foreach ($childrenByParent as $parentKey => $children) {
             if (($parentKey !== $this->normalizeTreeKey($configuration->rootValue)) && $children->isNotEmpty()) {
@@ -162,7 +167,7 @@ trait InteractsWithTreeTable
         $rootKey = $this->normalizeTreeKey($configuration->rootValue);
 
         foreach ($childrenByParent->get($rootKey, collect()) as $rootRecord) {
-            $this->appendTreeRecord($rootRecord, 0, $childrenByParent, $isFiltered, $flattened, $visited);
+            $this->appendTreeRecord($rootRecord, 0, [], $childrenByParent, $isFiltered, $flattened, $visited);
         }
 
         foreach ($allRecords as $record) {
@@ -175,7 +180,7 @@ trait InteractsWithTreeTable
                 && ($parentKey !== $rootKey)
                 && ! isset($includedKeys[$parentKey])
             ) {
-                $this->appendTreeRecord($record, 0, $childrenByParent, $isFiltered, $flattened, $visited);
+                $this->appendTreeRecord($record, 0, [], $childrenByParent, $isFiltered, $flattened, $visited);
             }
         }
 
@@ -240,6 +245,12 @@ trait InteractsWithTreeTable
     public function getTreeRecordDepth(Model $record): int
     {
         return $this->treeRecordDepths[(string) $record->getKey()] ?? 0;
+    }
+
+    /** @return array<int, bool> */
+    public function getTreeRecordLineContinuations(Model $record): array
+    {
+        return $this->treeRecordLineContinuations[(string) $record->getKey()] ?? [];
     }
 
     public function treeRecordHasChildren(Model $record): bool
@@ -536,6 +547,7 @@ trait InteractsWithTreeTable
     private function appendTreeRecord(
         Model $record,
         int $depth,
+        array $lineContinuations,
         Collection $childrenByParent,
         bool $isFiltered,
         array &$flattened,
@@ -549,6 +561,7 @@ trait InteractsWithTreeTable
 
         $visited[$recordKey] = true;
         $this->treeRecordDepths[$recordKey] = $depth;
+        $this->treeRecordLineContinuations[$recordKey] = $lineContinuations;
         $flattened[] = $record;
 
         if (
@@ -558,8 +571,18 @@ trait InteractsWithTreeTable
             return;
         }
 
-        foreach ($childrenByParent->get($recordKey, collect()) as $child) {
-            $this->appendTreeRecord($child, $depth + 1, $childrenByParent, $isFiltered, $flattened, $visited);
+        $children = $childrenByParent->get($recordKey, collect())->values();
+
+        foreach ($children as $index => $child) {
+            $this->appendTreeRecord(
+                $child,
+                $depth + 1,
+                [...$lineContinuations, $index < ($children->count() - 1)],
+                $childrenByParent,
+                $isFiltered,
+                $flattened,
+                $visited,
+            );
         }
     }
 
