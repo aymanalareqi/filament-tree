@@ -1,6 +1,23 @@
 # Filament Tree
 
-Render adjacency-list Eloquent models as expandable, searchable, filterable, and reorderable Filament 5 tables.
+Display adjacency-list Eloquent models as expandable, searchable, filterable, and reorderable trees in Filament 5. The package also includes a searchable tree-select form field.
+
+## Features
+
+- Expand and collapse individual branches or the entire tree
+- Use normal Filament table columns, search, filters, actions, and bulk actions
+- Keep matching records visible together with their ancestors while filtering
+- Drag records before, after, or inside another record
+- Save all reorder changes together in a database transaction
+- Select a parent or category with the `TreeSelect` form component
+- Support integer and string keys, custom root values, RTL layouts, and dark mode
+- Load package styles automatically—no panel plugin or custom theme setup
+
+## Requirements
+
+- PHP 8.3 or later
+- Laravel with Eloquent
+- Filament 5
 
 ## Installation
 
@@ -8,28 +25,47 @@ Render adjacency-list Eloquent models as expandable, searchable, filterable, and
 composer require alareqi/filament-tree
 ```
 
-The package service provider is discovered automatically by Laravel. It registers the compiled styles itself, so it does not need panel registration or a custom Filament theme.
+Laravel discovers the service provider automatically. The provider registers the package views, translations, and compiled CSS, so no panel registration or asset publishing is required.
 
-## Usage
+## Quick start
 
-The page must be a `ListRecords` page using `InteractsWithTreeTable`. Use `TreeColumn` for the column that displays indentation and expand/collapse controls.
+Assume `categories` is an adjacency-list table:
 
 ```php
-use Alareqi\FilamentTree\Columns\TreeColumn;
+Schema::create('categories', function (Blueprint $table): void {
+    $table->id();
+    $table->string('name');
+    $table->foreignId('parent_id')->nullable()->constrained('categories')->nullOnDelete();
+    $table->unsignedInteger('sort_order')->default(0);
+    $table->timestamps();
+});
+```
+
+Add `InteractsWithTreeTable` to the resource's `ListRecords` page:
+
+```php
 use Alareqi\FilamentTree\Concerns\InteractsWithTreeTable;
 use Filament\Resources\Pages\ListRecords;
-use Filament\Tables\Table;
 
 class ListCategories extends ListRecords
 {
     use InteractsWithTreeTable;
 }
+```
+
+Then use `TreeColumn` for the visible tree column and call `tree()` after defining the columns:
+
+```php
+use Alareqi\FilamentTree\Columns\TreeColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 public static function table(Table $table): Table
 {
     return $table
         ->columns([
             TreeColumn::make('name')->searchable(),
+            TextColumn::make('updated_at')->dateTime()->sortable(),
         ])
         ->reorderable('sort_order')
         ->tree(
@@ -39,89 +75,41 @@ public static function table(Table $table): Table
 }
 ```
 
-The tree works without reordering. To enable ordering, configure Filament's standard `reorderable()` method. The plugin reads Filament's reorder column, direction, condition, authorization, and lifecycle callbacks, but owns the tree drag-and-drop behavior and handle. Use the table's **Enable reordering** action to begin. Drops update an in-memory draft, and no database changes are made until the user clicks **Done**. While dragging, the top and bottom quarters of a row insert the record before or after it, while the highlighted center drops the record inside it as a child. This also allows a leaf record to become a parent. Tree tables intentionally disable pagination. Search and filters include the ancestors of every matching record and disable dragging.
+The table starts expanded, root records have a `null` parent, and Filament's **Enable reordering** action starts tree reordering.
 
-## Tree select field
+> [!IMPORTANT]
+> The column named by `treeColumn` must be a `TreeColumn`, and the list page must use `InteractsWithTreeTable`. Call `reorderable()` before `tree()` so the package can read Filament's reorder configuration.
 
-The package also provides a reusable tree select form field:
+## Tree select quick start
 
 ```php
 use Alareqi\FilamentTree\Forms\Components\TreeSelect;
 
 TreeSelect::make('parent_id')
-    ->treeOptions([
-        [
-            'value' => 1,
-            'parent' => null,
-            'label' => 'Parent',
-        ],
-        [
-            'value' => 2,
-            'parent' => 1,
-            'label' => 'Child',
-            'description' => 'Optional description',
-        ],
-    ])
+    ->label('Parent category')
+    ->treeOptions(fn () => Category::query()
+        ->orderBy('sort_order')
+        ->get()
+        ->map(fn (Category $category): array => [
+            'value' => $category->getKey(),
+            'parent' => $category->parent_id,
+            'label' => $category->name,
+        ]))
+    ->placeholder('No parent')
     ->searchable();
 ```
 
-Each option must contain `value`, `parent`, and `label`. Options may also define `description`, `selectedLabel`, `search`, and `disabled`.
+The placeholder represents `null` when it is selectable, making this suitable for choosing an optional parent.
 
-Use Filament's `authorizeReorder()`, `beforeReordering()`, and `afterReordering()` table methods for authorization and lifecycle hooks.
+## Documentation
 
-Customize the tree toolbar actions from the `ListRecords` page with typed, IDE-discoverable hooks:
+- [Installation and data model](docs/installation.md)
+- [Tree tables](docs/tree-tables.md)
+- [Reordering](docs/reordering.md)
+- [Tree select field](docs/tree-select.md)
+- [Customization and API reference](docs/customization.md)
+- [Troubleshooting and behavior notes](docs/troubleshooting.md)
 
-```php
-use Filament\Actions\Action;
-use Filament\Support\Icons\Heroicon;
+## License
 
-public function configureTreeExpandAllAction(Action $action): Action
-{
-    return $action->icon(Heroicon::PlusCircle);
-}
-
-public function configureTreeCollapseAllAction(Action $action): Action
-{
-    return $action->icon(Heroicon::MinusCircle);
-}
-
-public function configureTreeReorderAction(Action $action): Action
-{
-    return $action->icon(fn ($livewire): Heroicon => $livewire->isTreeReordering()
-        ? Heroicon::CheckCircle
-        : Heroicon::BarsArrowDown);
-}
-```
-
-The row icons can also be selected per record from the page:
-
-```php
-use BackedEnum;
-use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Model;
-
-public function getTreeExpandedIcon(Model $record): string | BackedEnum
-{
-    return Heroicon::OutlinedFolderOpen;
-}
-
-public function getTreeCollapsedIcon(Model $record): string | BackedEnum
-{
-    return Heroicon::OutlinedFolder;
-}
-
-public function getTreeLeafIcon(Model $record): string | BackedEnum
-{
-    return Heroicon::OutlinedDocumentText;
-}
-
-public function getTreeExpandIcon(Model $record): string | BackedEnum
-{
-    return Heroicon::ChevronRight;
-}
-
-public function getTreeCollapseIcon(Model $record): string | BackedEnum
-{
-    return Heroicon::ChevronDown;
-}
-```
+Filament Tree is open-source software licensed under the [MIT license](LICENSE.md).
