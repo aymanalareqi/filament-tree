@@ -1,3 +1,5 @@
+@config "../../tailwind.config.js";
+
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @source "../views/**/*.blade.php";

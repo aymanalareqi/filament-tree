@@ -8,7 +8,7 @@
 <x-dynamic-component
     :component="$getFieldWrapperView()"
     :field="$field"
-    class="fi-fo-tree-select-wrp"
+    class="fi-tree-assets fi-fo-tree-select-wrp"
 >
     <div
         x-data="{

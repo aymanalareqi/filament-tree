@@ -1,3 +1,4 @@
+<div class="fi-tree-assets">
 <div
     class="fi-tree-node flex min-w-0 items-center gap-2.5"
     style="gap: 0.625rem"
@@ -208,4 +209,5 @@
     />
 
     <div class="min-w-0 flex-1">{!! $content !!}</div>
+</div>
 </div>
