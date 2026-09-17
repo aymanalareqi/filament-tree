@@ -1,5 +1,7 @@
 # Filament Tree
 
+![Filament Tree package overview showing expandable hierarchical tables in light and dark modes](docs/images/filament-tree-overview.png)
+
 Display adjacency-list Eloquent models as expandable, searchable, filterable, and reorderable trees in Filament 5. The package also includes a searchable tree-select form field.
 
 ## Features
